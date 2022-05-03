@@ -120,7 +120,7 @@ window.PressSync = ( function( window, document, $ ) {
 			// Convert request time from milliseconds to seconds.
 			var request_time = ( new Date().getTime() - start_time ) / 1000;
 
-			app.updateProgressBar( response.data.objects_to_sync, response.data.total_objects_processed, response.data.total_objects, request_time );
+			app.updateProgressBar( response.data.ps_objects_to_sync, response.data.total_objects_processed, response.data.total_objects, request_time );
 
 			if ( response.data.total_objects_processed >= response.data.total_objects ) {
 				// Start the next batch at page 1.
@@ -133,7 +133,7 @@ window.PressSync = ( function( window, document, $ ) {
 				return;
 			}
 
-			app.syncData( response.data.next_page, response.data.objects_to_sync, next_args );
+			app.syncData( response.data.next_page, response.data.ps_objects_to_sync, next_args );
 		});
 
 	}
