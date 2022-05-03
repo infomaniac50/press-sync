@@ -971,7 +971,6 @@ SQL;
 			return array( 'ID' => $attachment_id );
 		}
 
-		$attachment_metadata = $this->get_attachment_metadata_from_request( $attachment_args );
 		$temp_file           = false;
 
 		require_once( ABSPATH . '/wp-admin/includes/image.php' );
