@@ -344,7 +344,7 @@ class API extends \WP_REST_Controller {
 
 		// Bail if the insert didn't work.
 		if ( is_wp_error( $local_post_id ) ) {
-			trigger_error( sprintf( 'Error inserting post: ', $local_post_id->get_error_message() ) );
+			trigger_error( sprintf( 'Error inserting post: %s', $local_post_id->get_error_message() ) );
 			return array( 'debug' => $local_post_id );
 		}
 
