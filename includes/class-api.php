@@ -31,6 +31,21 @@ class API extends \WP_REST_Controller {
 	 */
 	private $fix_terms = false;
 
+    /**
+     * @var bool
+     */
+    private $skip_assets;
+
+    /**
+     * @var bool
+     */
+    private $preserve_ids;
+
+    /**
+     * @var int
+     */
+    private $content_threshold;
+
 	/**
 	 * Constructor.
 	 *
