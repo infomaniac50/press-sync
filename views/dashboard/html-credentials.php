@@ -7,7 +7,7 @@
 			<tr valign="top">
 				<th scope="row">Press Sync Key</th>
 				<td>
-					<input type="password" name="ps_key" value="<?php echo esc_attr( get_option( 'ps_key' ) ); ?>" />
+					<input type="text" name="ps_key" value="<?php echo esc_attr( get_option( 'ps_key' ) ); ?>" />
 					<p>This secure key is used to authenticate requests to your site. Without it, your site can't synchronize individual posts or receive content.</p>
 				</td>
 			</tr>
@@ -28,7 +28,7 @@
 			<tr valign="top">
 				<th scope="row">Remote Press Sync Key</th>
 				<td>
-					<input type="password" name="ps_remote_key" value="<?php echo esc_attr( get_option( 'ps_remote_key' ) ); ?>" />
+					<input type="text" name="ps_remote_key" value="<?php echo esc_attr( get_option( 'ps_remote_key' ) ); ?>" />
 					<p>The unique key that allows you to communicate with the remote site.</p>
 				</td>
 			</tr>
