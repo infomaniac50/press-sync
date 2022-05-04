@@ -7,7 +7,7 @@
 			<?php if ( \Press_Sync\Press_Sync::check_connection() ) : ?>
 				<p style="text-align: center;"><button class="press-sync-button button button-primary button-large" style="min-width: 150px;">Sync</button></p>
 			<?php else : ?>
-				<p style="text-align: center;"><strong>Check your <a href="?page=press-sync&amp;tab=credentials">remote Press Sync key</a>. You are not connected to the remote site.</strong></p>
+				<p style="text-align: center;"><strong>Check your <a href="<?= admin_url('tools.php?page=press-sync&tab=credentials') ?>">remote Press Sync key</a>. You are not connected to the remote site.</strong></p>
 			<?php endif; ?>
 			<div class="progress-stats" style="display: none; text-align: center; padding: 10px 0;">
 				Loading...

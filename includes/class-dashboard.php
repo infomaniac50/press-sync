@@ -201,7 +201,7 @@ class Dashboard {
 				_e(
 					sprintf(
 						'<strong>PressSync:</strong> You must define your PressSync key before you can receive updates from another WordPress site. <a href="%s">Set it now</a>',
-						admin_url( 'tools.php?page=press-sync&tab=settings' ) ),
+						admin_url( 'tools.php?page=press-sync&tab=credentials' ) ),
 					'press-sync'
 				); ?></p>
         </div>
