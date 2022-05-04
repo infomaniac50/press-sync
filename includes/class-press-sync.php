@@ -19,7 +19,7 @@ class Press_Sync {
 	 * @since 0.9.0
 	 * @var int
 	 */
-	const PAGE_SIZE = 5;
+	public const PAGE_SIZE = 5;
 
 	/**
 	 * Plugin class
@@ -66,11 +66,20 @@ class Press_Sync {
 	private $progress;
 
 	/**
+	 * @var string
+	 */
+	private $plugin_path;
+
+	/**
 	 * Initialize the class instance.
+	 *
+	 * @param string $plugin_path
 	 *
 	 * @since 0.4.5
 	 */
-	public function __construct() {
+	public function __construct( $plugin_path ) {
+		$this->plugin_path = $plugin_path;
+
 		// Initialize plugin classes.
 		$this->plugin_classes();
 	}
@@ -78,12 +87,14 @@ class Press_Sync {
 	/**
 	 * Create an instance of the Press Sync object
 	 *
+	 * @param string $plugin_path
+	 *
 	 * @since 0.1.0
 	 */
-	public static function init() {
+	public static function init( $plugin_path ) {
 
 		if ( null === self::$single_instance ) {
-			self::$single_instance = new self();
+			self::$single_instance = new self( $plugin_path );
 		}
 
 		return self::$single_instance;
@@ -1264,6 +1275,13 @@ SQL;
 		$sql           = $GLOBALS['wpdb']->prepare( $prepared_sql, $synced_posts );
 
 		return $sql;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function get_plugin_path(): string {
+		return $this->plugin_path;
 	}
 
 	/**

@@ -1,0 +1,35 @@
+{
+  "name": "press-sync",
+  "version": "0.9.2",
+  "dependencies": {
+    "@wpackio/entrypoint": "^6.3.0"
+  },
+  "author": {
+    "name": "WebDevStudios",
+    "email": "support@webdevstudios.com"
+  },
+  "maintainers": [
+    {
+      "name": "Marcus Battle",
+      "email": "marcus@webdevstudios.com"
+    },
+    {
+      "name": "Zach Owen",
+      "email": "zach@webdevstudios.com"
+    },
+    {
+      "name": "Viacom"
+    }
+  ],
+  "license": "GPL-3.0-or-later",
+  "private": true,
+  "devDependencies": {
+    "@wpackio/scripts": "^6.3.0"
+  },
+  "description": "The easiest way to synchronize posts, media and users between two WordPress sites",
+  "scripts": {
+    "build": "wpackio-scripts build",
+    "start": "wpackio-scripts start",
+    "archive": "wpackio-scripts pack"
+  }
+}

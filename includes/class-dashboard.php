@@ -2,6 +2,8 @@
 
 namespace Press_Sync;
 
+use WPackio\Enqueue;
+
 /**
  * The Dashboard.
  *
@@ -49,6 +51,11 @@ class Dashboard {
 	];
 
 	/**
+	 * @var Enqueue
+	 */
+	private $enqueue;
+
+	/**
 	 * The Constructor.
 	 *
 	 * @param Press_Sync $plugin Main plugin object.
@@ -57,6 +64,15 @@ class Dashboard {
 	 */
 	public function __construct( $plugin ) {
 		$this->plugin = $plugin;
+
+		$this->enqueue = new Enqueue(
+			'pressSync',
+			'dist',
+			'0.9.2',
+			'plugin',
+			$this->plugin->get_plugin_path(), // Plugin location, pass false in case of theme.
+		);
+
 		$this->hooks();
 		$this->init();
 	}
@@ -129,10 +145,11 @@ class Dashboard {
 	 * @since 0.1.0
 	 */
 	public function load_scripts() {
+		$this->enqueue->enqueue( 'press-sync', 'main', [
+			'css' => false,
+			'media' => 'all',
+		] );
 
-		$press_sync_js = plugins_url( 'assets/js/press-sync.js', dirname( __FILE__ ) );
-
-		wp_enqueue_script( 'press-sync', $press_sync_js, true );
 		wp_localize_script( 'press-sync', 'press_sync', array( 'ajax_url' => admin_url( 'admin-ajax.php' ) ) );
 	}
 
