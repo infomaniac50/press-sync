@@ -1,6 +1,6 @@
 <div class="wrap about-wrap press-sync">
     <?php \Press_Sync\Press_Sync::init()->include_page( 'dashboard/nav' ); ?>
-	<form class="form" method="post" action="options.php">
+	<form class="form" method="post" action="<?= admin_url('options.php') ?>">
 		<?php settings_fields( 'press-sync' ); ?>
 		<?php do_settings_sections( 'press-sync' ); ?>
 		<table class="form-table">

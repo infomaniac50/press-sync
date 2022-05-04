@@ -87,18 +87,15 @@ class Press_Sync {
 	/**
 	 * Create an instance of the Press Sync object
 	 *
-	 * @param string $plugin_path
-	 *
 	 * @since 0.1.0
 	 */
-	public static function init( $plugin_path ) {
+	public static function init() {
 
 		if ( null === self::$single_instance ) {
-			self::$single_instance = new self( $plugin_path );
+			self::$single_instance = new self( PRESS_SYNC_PLUGIN_FILE );
 		}
 
 		return self::$single_instance;
-
 	}
 
 	/**
@@ -138,8 +135,8 @@ class Press_Sync {
 	public function include_page( $filename ) {
 
 		$filename_parts = explode( '/', $filename );
-		$controller     = isset( $filename_parts[0] ) ? $filename_parts[0] : '';
-		$file           = isset( $filename_parts[1] ) ? $filename_parts[1] : $controller;
+		$controller     = $filename_parts[0] ?? '';
+		$file           = $filename_parts[1] ?? $controller;
 
 		$filename = plugin_dir_path( __FILE__ ) . "../views/{$controller}/html-" . $file . '.php';
 
@@ -167,7 +164,7 @@ class Press_Sync {
 	 */
 	public static function dir( $path = '' ) {
 		static $dir;
-		$dir = $dir ?: trailingslashit( dirname( __FILE__ ) );
+		$dir = $dir ?: trailingslashit( __DIR__ );
 
 		return $dir . $path;
 	}
@@ -194,9 +191,9 @@ class Press_Sync {
 	 * @return boolean
 	 * @since 0.1.0
 	 */
-	public function check_connection( $url = '' ) {
+	public static function check_connection( $url = '' ) {
 
-		$url = $this->get_remote_url( $url );
+		$url = self::get_remote_url( $url );
 
 		$remote_get_args = array(
 			'timeout' => 30,
@@ -208,7 +205,7 @@ class Press_Sync {
 		if ( 200 === $response_code ) {
 			$response_body = json_decode( wp_remote_retrieve_body( $response ), true );
 
-			return isset( $response_body['success'] ) ? $response_body['success'] : false;
+			return $response_body['success'] ?? false;
 		}
 
 		return false;
@@ -346,7 +343,7 @@ class Press_Sync {
 
 				unset( $user['ID'] );
 
-				array_push( $users, $user );
+				$users[] = $user;
 
 			}
 		}
@@ -374,9 +371,8 @@ class Press_Sync {
 		$format_string = implode( ', ', $placeholders );
 		$prepared_sql  = "SELECT * FROM {$wpdb->options} WHERE option_name IN ({$format_string})";
 		$sql           = $wpdb->prepare( $prepared_sql, $this->options );
-		$options       = $wpdb->get_results( $sql, ARRAY_A );
 
-		return $options;
+		return $wpdb->get_results( $sql, ARRAY_A );
 	}
 
 	/**
@@ -407,10 +403,9 @@ WHERE
 	tr.object_id = %d
 SQL;
 
-			$sql   = $GLOBALS['wpdb']->prepare( $sql, $object_id );
-			$terms = $GLOBALS['wpdb']->get_results( $sql, ARRAY_A );
+			$sql = $GLOBALS['wpdb']->prepare( $sql, $object_id );
 
-			return $terms;
+			return $GLOBALS['wpdb']->get_results( $sql, ARRAY_A );
 		}
 
 		foreach ( $taxonomies as $key => $taxonomy ) {
@@ -480,7 +475,7 @@ SQL;
 	public function count_all_to_sync() {
 
 		$count           = 0;
-		$objects_to_sync = $this->objects_to_sync( array( 'all' ) );
+		$objects_to_sync = self::objects_to_sync( array( 'all' ) );
 
 		foreach ( $objects_to_sync as $object => $label ) {
 			$count += absint( $this->count_objects_to_sync( $object ) );
@@ -499,10 +494,9 @@ SQL;
 		/** @var \wpdb */
 		global $wpdb;
 
-		$sql   = "SELECT COUNT(*) FROM {$wpdb->users}";
-		$count = $wpdb->get_var( $sql );
+		$sql = "SELECT COUNT(*) FROM {$wpdb->users}";
 
-		return $count;
+		return $wpdb->get_var( $sql );
 	}
 
 	/**
@@ -561,9 +555,7 @@ SQL;
 		 * @return array
 		 * @since 0.7.0
 		 */
-		$object_args = apply_filters( 'press_sync_after_prepare_post_args_to_sync', $object_args );
-
-		return $object_args;
+		return apply_filters( 'press_sync_after_prepare_post_args_to_sync', $object_args );
 
 	}
 
@@ -589,7 +581,7 @@ SQL;
 	 */
 	public function update_links( $object_args ) {
 
-		$post_content = isset( $object_args['post_content'] ) ? $object_args['post_content'] : '';
+		$post_content = $object_args['post_content'] ?? '';
 
 		if ( $post_content ) {
 
@@ -699,10 +691,9 @@ SQL;
 
 		global $wpdb;
 
-		$sql             = "SELECT p2p_from, p2p_to, p2p_type FROM {$wpdb->prefix}p2p WHERE p2p_from = $post_id OR p2p_to = $post_id";
-		$p2p_connections = $wpdb->get_results( $sql, 'ARRAY_A' );
+		$sql = "SELECT p2p_from, p2p_to, p2p_type FROM {$wpdb->prefix}p2p WHERE p2p_from = $post_id OR p2p_to = $post_id";
 
-		return $p2p_connections;
+		return $wpdb->get_results( $sql, 'ARRAY_A' );
 
 	}
 
@@ -815,10 +806,9 @@ SQL;
 			'body'    => $args,
 		);
 
-		$response      = wp_remote_post( $url, $args );
-		$response_body = wp_remote_retrieve_body( $response );
+		$response = wp_remote_post( $url, $args );
 
-		return $response_body;
+		return wp_remote_retrieve_body( $response );
 	}
 
 	/**
@@ -859,7 +849,7 @@ SQL;
 			$attachment_args['attachment_url'] = $attachment_url;
 			$attachment_args['details']        = $this->get_attachment_details( $attachment_url );
 
-			array_push( $embedded_media, $attachment_args );
+			$embedded_media[] = $attachment_args;
 		}
 
 		unset( $doc );
@@ -892,14 +882,12 @@ SQL;
 		$image          = wp_get_attachment_metadata( $attachment->ID );
 		$filename_parts = explode( '/', $image['file'] );
 
-		$attachment_details = array(
+		return array(
 			'filename'  => $filename_parts[2],
 			'post_date' => $filename_parts[0] . '/' . $filename_parts[1],
 			'url'       => $attachment->guid,
 			'ID'        => $attachment->ID,
 		);
-
-		return $attachment_details;
 	}
 
 	/**
@@ -921,9 +909,7 @@ SQL;
 
 		global $wpdb;
 
-		$attachment_id = $wpdb->get_var( "SELECT ID FROM $wpdb->posts WHERE guid LIKE '%$filename_partial_path%'" );
-
-		return $attachment_id;
+		return $wpdb->get_var( "SELECT ID FROM $wpdb->posts WHERE guid LIKE '%$filename_partial_path%'" );
 	}
 
 	/**
@@ -968,7 +954,7 @@ SQL;
 			$response                = $this->sync_batch( $content_type, $settings, $next_page );
 			$total_objects           = isset( $response['total_objects'] ) ? (int) $response['total_objects'] : 0;
 			$total_objects_processed = isset( $response['total_objects_processed'] ) ? (int) $response['total_objects_processed'] : 0;
-			$next_page               = isset( $response['next_page'] ) ? $response['next_page'] : 0;
+			$next_page               = isset( $response['next_page'] ) ? (int) $response['next_page'] : 0;
 
 			if ( $total_objects === $total_objects_processed || $is_batch ) {
 				$do_run = false;
@@ -1012,7 +998,7 @@ SQL;
 		$this->init_connection( $settings['ps_remote_domain'] );
 
 		// Build out the url and send the data to the remote site.
-		$url  = $this->get_remote_url( '', 'sync' );
+		$url  = self::get_remote_url( '', 'sync' );
 		$logs = $this->send_data_to_remote_site( $url, $objects_args );
 
 		return array(
@@ -1034,17 +1020,23 @@ SQL;
 	 * @return array $order_to_sync_all
 	 * @since 0.6.1
 	 */
-	public function order_to_sync_all( $order_to_sync_all = array() ) {
-		// An array of all of the core WP objects in the desired order to sync.
-		$order_to_sync_all = array( 'user', 'taxonomy_term', 'option', 'post', 'page', 'media' );
-
+	public function order_to_sync_all(
+		$order_to_sync_all = array(
+			'user',
+			'taxonomy_term',
+			'option',
+			'post',
+			'page',
+			'media',
+		)
+	) {
 		// Get any CPTs.
 		$custom_post_types = get_post_types( array( '_builtin' => false ), 'objects' );
 
 		if ( $custom_post_types ) {
 
 			foreach ( $custom_post_types as $cpt ) {
-				array_push( $order_to_sync_all, $cpt->name );
+				$order_to_sync_all[] = $cpt->name;
 			}
 		}
 
@@ -1147,7 +1139,7 @@ SQL;
 	 * @return array $objects A list of WP objects.
 	 * @since 0.1.0
 	 */
-	public function objects_to_sync( $exclude = array() ) {
+	public static function objects_to_sync( $exclude = array() ) {
 
 		$objects = array(
 			'all'           => __( 'All', 'press-sync' ),
@@ -1208,9 +1200,8 @@ SQL;
 		}
 
 		$contents = file_get_contents( $local_path );
-		$objects  = json_decode( $contents, 1 );
 
-		return $objects;
+		return json_decode( $contents, 1 );
 	}
 
 	/**
@@ -1248,7 +1239,7 @@ SQL;
 			$contents = file_get_contents( $file->getPathname() );
 			$contents = json_decode( $contents, 1 );
 
-			array_push( $objects, $contents );
+			$objects[] = $contents;
 		}
 
 		return $objects;
@@ -1265,16 +1256,15 @@ SQL;
 	public function get_synced_object_clause( $objects_to_sync ) {
 		$synced_posts = $this->get_synced_object_ids( $objects_to_sync );
 
-		if ( ! get_option( 'ps_only_sync_missing' ) || empty( $synced_posts ) ) {
+		if ( empty( $synced_posts ) || ! get_option( 'ps_only_sync_missing' ) ) {
 			return '';
 		}
 
 		$placeholders  = array_fill( 0, count( $synced_posts ), '%d' );
 		$format_string = implode( ', ', $placeholders );
 		$prepared_sql  = " AND ID NOT IN ({$format_string}) ";
-		$sql           = $GLOBALS['wpdb']->prepare( $prepared_sql, $synced_posts );
 
-		return $sql;
+		return $GLOBALS['wpdb']->prepare( $prepared_sql, $synced_posts );
 	}
 
 	/**
@@ -1301,11 +1291,7 @@ SQL;
 
 		$code = curl_getinfo( $handle, CURLINFO_HTTP_CODE );
 
-		if ( '404' === $code ) {
-			return true;
-		}
-
-		return false;
+		return '404' === $code;
 	}
 
 	/**
@@ -1319,7 +1305,7 @@ SQL;
 	 * @since 0.5.1
 	 * @since 0.7.0
 	 */
-	public function get_remote_url( $url = '', $endpoint = 'status', $args = array() ) {
+	public static function get_remote_url( $url = '', $endpoint = 'status', $args = array() ) {
 		$url        = $url ? trailingslashit( $url ) : trailingslashit( get_option( 'ps_remote_domain' ) );
 		$query_args = wp_parse_args( $args, array(
 			'press_sync_key' => get_option( 'ps_remote_key' ),
@@ -1408,7 +1394,7 @@ SQL;
 			return $last_sync;
 		}
 
-		$url = $this->get_remote_url( '', 'progress', array(
+		$url = self::get_remote_url( '', 'progress', array(
 			'post_type'       => $objects_to_sync,
 			'ps_preserve_ids' => (bool) get_option( 'ps_preserve_ids' ),
 		) );
@@ -1603,9 +1589,8 @@ AND tt.term_taxonomy_id IN (
 		object_id = %d
 )
 SQL;
-		$where = $GLOBALS['wpdb']->prepare( $where, $this->settings['ps_testing_post'] );
 
-		return $where;
+		return $GLOBALS['wpdb']->prepare( $where, $this->settings['ps_testing_post'] );
 	}
 
 	/**

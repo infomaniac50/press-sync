@@ -16,7 +16,7 @@
 		</div>
 	</div>
 	<?php else: ?>
-	<form class="form" method="post" action="options.php">
+	<form class="form" method="post" action="<?= admin_url('options.php') ?>">
 		<?php settings_fields( 'press-sync-advanced' ); ?>
 		<?php do_settings_sections( 'press-sync-advanced' ); ?>
 		<table class="form-table">

@@ -154,7 +154,7 @@ class Dashboard {
 	}
 
 	/**
-	 * Registers teh Press Sync settings via WP.
+	 * Registers the Press Sync settings via WP.
 	 *
 	 * @since 0.3.0
 	 */
@@ -196,10 +196,12 @@ class Dashboard {
 		}
 
 		?>
-        <div class="update-nag notice is-dismissable">
+        <div class="update-nag notice is-dismissible">
             <p><?php
 				_e(
-					'<strong>PressSync:</strong> You must define your PressSync key before you can recieve updates from another WordPress site. <a href="tools.php?page=press-sync&tab=settings">Set it now</a>',
+					sprintf(
+						'<strong>PressSync:</strong> You must define your PressSync key before you can receive updates from another WordPress site. <a href="%s">Set it now</a>',
+						admin_url( 'tools.php?page=press-sync&tab=settings' ) ),
 					'press-sync'
 				); ?></p>
         </div>

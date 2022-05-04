@@ -16,7 +16,7 @@
 			<li>wp press-sync users</li>
 			<li>wp press-sync options</li>
 		</ul>
-		<p>Each command above has additional paraemters that can be vewied by passing in the --prompt argument.</p>
+		<p>Each command above has additional parameters that can be viewed by passing in the --prompt argument.</p>
 	</div>
 	<div id="json-import" style="max-width: 800px; margin-bottom: 20px;">
 		<h3>Local JSON Import (For Advanced Users)</h3>

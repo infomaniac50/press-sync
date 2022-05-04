@@ -2,10 +2,16 @@
 
 namespace Press_Sync;
 
+use Exception;
+use WP_Post;
+use WP_REST_Controller;
+use WP_REST_Request;
+use WP_REST_Response;
+
 /**
  * The Press_Sync_API class.
  */
-class API extends \WP_REST_Controller {
+class API extends WP_REST_Controller {
 
 	/**
 	 * Parent plugin class.
@@ -13,7 +19,7 @@ class API extends \WP_REST_Controller {
 	 * @var   Press_Sync
 	 * @since 0.1.0
 	 */
-	protected $plugin = null;
+	protected $plugin;
 
 	/**
 	 * Prefix for meta keys
@@ -111,7 +117,7 @@ class API extends \WP_REST_Controller {
 	/**
 	 * Gets the connection status via API request.
 	 *
-	 * @return JSON
+	 * @return void
 	 * @since 0.1.0
 	 */
 	public function get_connection_status_via_api() {
@@ -126,7 +132,7 @@ class API extends \WP_REST_Controller {
 	/**
 	 * Gets the post sync status via API request.
 	 *
-	 * @param WP_Request $request The WP_Request object.
+	 * @param WP_REST_Request $request The WP_REST_Request object.
 	 *
 	 * @return JSON
 	 * @since 0.2.0
@@ -170,21 +176,16 @@ class API extends \WP_REST_Controller {
 	 */
 	public function validate_sync_key() {
 
-		$press_sync_key_from_remote = isset( $_REQUEST['press_sync_key'] ) ? $_REQUEST['press_sync_key'] : '';
+		$press_sync_key_from_remote = $_REQUEST['press_sync_key'] ?? '';
 		$press_sync_key             = get_option( 'ps_key' );
 
-		if ( ! $press_sync_key || ( $press_sync_key_from_remote !== $press_sync_key ) ) {
-			return false;
-		}
-
-		return true;
-
+		return ! ( ! $press_sync_key || ( $press_sync_key_from_remote !== $press_sync_key ) );
 	}
 
 	/**
 	 * Sync all of the object received from the local site.
 	 *
-	 * @param WP_Request $request The WP_Request object.
+	 * @param WP_REST_Request $request The WP_REST_Request object.
 	 *
 	 * @return WP_REST_Response
 	 * @since 0.1.0
@@ -192,9 +193,7 @@ class API extends \WP_REST_Controller {
 	public function sync_objects( $request ) {
 		$objects_to_sync         = $request->get_param( 'ps_objects_to_sync' );
 		$objects                 = $request->get_param( 'objects' );
-		$duplicate_action        = $request->get_param( 'ps_duplicate_action' ) ? $request->get_param(
-			'ps_duplicate_action'
-		) : 'skip';
+		$duplicate_action        = $request->get_param( 'ps_duplicate_action' ) ?: 'skip';
 		$force_update            = $request->get_param( 'ps_force_update' );
 		$this->skip_assets       = (bool) $request->get_param( 'ps_skip_assets' );
 		$this->preserve_ids      = (bool) $request->get_param( 'ps_preserve_ids' );
@@ -242,7 +241,7 @@ class API extends \WP_REST_Controller {
 		) ? $objects_to_sync : 'post';
 
 		foreach ( $objects as $object ) {
-			$sync_method = "sync_{$objects_to_sync}";
+			$sync_method = "sync_$objects_to_sync";
 			$responses[] = $this->$sync_method( $object, $duplicate_action, $force_update );
 		}
 
@@ -291,7 +290,7 @@ class API extends \WP_REST_Controller {
 			return $this->fix_term_relationships( $local_post['ID'], $post_args );
 		}
 
-		$post_args['ID'] = isset( $local_post['ID'] ) ? $local_post['ID'] : 0;
+		$post_args['ID'] = $local_post['ID'] ?? 0;
 
 		// Replace embedded media.
 		if ( isset( $post_args['embedded_media'] ) ) {
@@ -300,7 +299,7 @@ class API extends \WP_REST_Controller {
 
 				$attachment_id = $this->sync_attachment( $attachment_args );
 
-				if ( abinst( $attachment_id ) ) {
+				if ( absint( $attachment_id ) ) {
 
 					$sync_source    = $post_args['meta_input']['press_sync_source'];
 					$attachment_url = str_ireplace( $sync_source, home_url(), $attachment_args['attachment_url'] );
@@ -381,7 +380,7 @@ class API extends \WP_REST_Controller {
 		$featured_result = $this->attach_featured_image( $local_post_id, $post_args );
 
 		// Attach any comments.
-		$comments = isset( $post_args['comments'] ) ? $post_args['comments'] : array();
+		$comments = $post_args['comments'] ?? array();
 		$this->attach_comments( $local_post_id, $comments );
 
 		$this->attach_terms( $local_post_id, $post_args );
@@ -432,10 +431,10 @@ class API extends \WP_REST_Controller {
 					$filename = $attachment['filename'];
 					unset( $attachment['filename'] );
 
-					$attachment_id = wp_insert_attachment( $attachment, $filename, 0 );
+					$attachment_id = wp_insert_attachment( $attachment, $filename );
 
 					if ( is_wp_error( $attachment_id ) ) {
-						throw new \Exception(
+						throw new Exception(
 							'There was an error creating the attachment: ' . $attachment_id->get_error_message()
 						);
 					}
@@ -464,7 +463,7 @@ class API extends \WP_REST_Controller {
 			if ( $attachment_id && $import_id ) {
 				update_post_meta( $attachment_id, 'press_sync_post_id', $import_id );
 			}
-		} catch ( \Exception $e ) {
+		} catch ( Exception $e ) {
 			// @TODO log it more!
 			error_log( $e->getMessage() );
 		}
@@ -484,7 +483,7 @@ class API extends \WP_REST_Controller {
 	 */
 	public function sync_user( $user_args, $duplicate_action, $force_update = false ) {
 
-		$username = isset( $user_args['user_login'] ) ? $user_args['user_login'] : '';
+		$username = $user_args['user_login'] ?? '';
 
 		// Check to see if the user exists.
 		$user = get_user_by( 'login', $username );
@@ -494,7 +493,8 @@ class API extends \WP_REST_Controller {
 			$user_id = wp_insert_user( $user_args );
 
 			if ( is_wp_error( $user_id ) ) {
-				return wp_send_json_error();
+				// PHP will die after entering this function.
+				wp_send_json_error();
 			}
 
 			$user = get_user_by( 'id', $user_id );
@@ -512,7 +512,7 @@ class API extends \WP_REST_Controller {
 			update_user_meta( $user_id, $usermeta_key, $usermeta_value );
 		}
 
-		// Asign user role.
+		// Assign user role.
 		$user->add_role( $user_args['role'] );
 
 		// Prepare response.
@@ -533,8 +533,8 @@ class API extends \WP_REST_Controller {
 	 */
 	public function sync_option( $option_args ) {
 
-		$option_name  = isset( $option_args['option_name'] ) ? $option_args['option_name'] : '';
-		$option_value = isset( $option_args['option_value'] ) ? $option_args['option_value'] : '';
+		$option_name  = $option_args['option_name'] ?? '';
+		$option_value = $option_args['option_value'] ?? '';
 
 		if ( empty( $option_value ) || empty( $option_name ) ) {
 			return false;
@@ -560,7 +560,7 @@ class API extends \WP_REST_Controller {
 		global $wpdb;
 
 		// Capture the press sync post ID.
-		$press_sync_post_id = isset( $post_args['meta_input']['press_sync_post_id'] ) ? $post_args['meta_input']['press_sync_post_id'] : 0;
+		$press_sync_post_id = $post_args['meta_input']['press_sync_post_id'] ?? 0;
 
 		$sql = "
 			SELECT post_id AS ID, post_title, post_type, post_modified FROM $wpdb->postmeta AS meta
@@ -579,7 +579,7 @@ class API extends \WP_REST_Controller {
 		$prepared_sql = $wpdb->prepare( $sql, $prepare_args );
 		$post         = $wpdb->get_row( $prepared_sql, ARRAY_A );
 
-		return ( $post ) ? $post : false;
+		return ( $post ) ?: false;
 
 	}
 
@@ -619,8 +619,8 @@ class API extends \WP_REST_Controller {
 	 */
 	public function comment_exists( $comment_args = array() ) {
 
-		$press_sync_comment_id = isset( $comment_args['meta_input']['press_sync_comment_id'] ) ? $comment_args['meta_input']['press_sync_comment_id'] : 0;
-		$press_sync_source     = isset( $comment_args['meta_input']['press_sync_source'] ) ? $comment_args['meta_input']['press_sync_source'] : 0;
+		$press_sync_comment_id = $comment_args['meta_input']['press_sync_comment_id'] ?? 0;
+		$press_sync_source     = $comment_args['meta_input']['press_sync_source'] ?? 0;
 
 		$query_args = array(
 			'number'     => 1,
@@ -653,7 +653,7 @@ class API extends \WP_REST_Controller {
 	 *
 	 * @param integer $press_sync_post_id The Post ID of the remote post.
 	 *
-	 * @return WP_post
+	 * @return WP_Post
 	 * @since 0.1.0
 	 */
 	public function get_post_by_orig_id( $press_sync_post_id ) {
@@ -697,7 +697,7 @@ class API extends \WP_REST_Controller {
 
 		$press_sync_user_id = $wpdb->get_var( $prepared_sql );
 
-		return ( $press_sync_user_id ) ? $press_sync_user_id : 1;
+		return ( $press_sync_user_id ) ?: 1;
 
 	}
 
@@ -741,9 +741,7 @@ class API extends \WP_REST_Controller {
 	 */
 	public function allow_sync_external_host( $allow, $host, $url ) {
 		// Return true to allow an external request to be made via download_url().
-		$allow = true;
-
-		return $allow;
+		return true;
 	}
 
 	/**
@@ -798,7 +796,7 @@ class API extends \WP_REST_Controller {
 			return;
 		}
 
-		$connections = isset( $post_args['p2p_connections'] ) ? $post_args['p2p_connections'] : array();
+		$connections = array_key_exists( 'p2p_connections', $post_args ) ? $post_args['p2p_connections'] : array();
 
 		if ( ! $connections ) {
 			return;
@@ -828,10 +826,9 @@ class API extends \WP_REST_Controller {
 
 		global $wpdb;
 
-		$sql     = "SELECT post_id FROM $wpdb->postmeta WHERE meta_key = 'press_sync_post_id' AND meta_value = $press_sync_post_id";
-		$post_id = $wpdb->get_var( $sql );
+		$sql = "SELECT post_id FROM $wpdb->postmeta WHERE meta_key = 'press_sync_post_id' AND meta_value = $press_sync_post_id";
 
-		return $post_id;
+		return $wpdb->get_var( $sql );
 	}
 
 	/**
@@ -851,7 +848,7 @@ class API extends \WP_REST_Controller {
 
 		foreach ( $post_args['comments'] as $comment ) {
 			$comment['comment_post_ID'] = $post_id;
-			if ( isset( $comment['comment_post_ID'] ) ) {
+			if ( array_key_exists( 'comment_post_ID', $comment ) ) {
 				wp_insert_comment( $comment );
 			}
 		}
@@ -860,14 +857,17 @@ class API extends \WP_REST_Controller {
 	/**
 	 * Checks to see if a non-synced duplicate exists.
 	 *
-	 * @param string $post_args The post arguments for the post being synced.
+	 * @param string|array $post_args The post arguments for the post being synced.
 	 *
-	 * @return WP_Post
+	 * @return array|false|object|void
+	 *
 	 * @since 0.1.0
 	 * @since 0.6.0
 	 */
 	public function get_non_synced_duplicate( $post_args ) {
 		$duplicate_post = false;
+
+		$post_args = wp_parse_args( $post_args );
 
 		// @TODO post name and content checks should be their own methods...later, in the Post sync class.
 
@@ -883,11 +883,9 @@ class API extends \WP_REST_Controller {
 		}
 
 		// Post content check.
-		$content_threshold = $this->content_threshold;
+		$content_threshold = absint( $this->content_threshold );
 
-		if ( $duplicate_post && false !== $content_threshold && 0 !== absint( $content_threshold ) ) {
-			$content_threshold = absint( $content_threshold );
-
+		if ( $duplicate_post && 0 !== $content_threshold ) {
 			// Calculate how similar the post contents are (is?).
 			similar_text( $duplicate_post['post_content'], $post_args['post_content'], $similarity );
 
@@ -914,8 +912,8 @@ class API extends \WP_REST_Controller {
 			return false;
 		}
 
-		$press_sync_post_id = isset( $object_args['meta_input']['press_sync_post_id'] ) ? $object_args['meta_input']['press_sync_post_id'] : '';
-		$press_sync_source  = isset( $object_args['meta_input']['press_sync_source'] ) ? $object_args['meta_input']['press_sync_source'] : '';
+		$press_sync_post_id = $object_args['meta_input']['press_sync_post_id'] ?? '';
+		$press_sync_source  = $object_args['meta_input']['press_sync_source'] ?? '';
 
 		update_post_meta( $object_id, 'press_sync_post_id', $press_sync_post_id );
 		update_post_meta( $object_id, 'press_sync_source', $press_sync_source );
@@ -975,16 +973,16 @@ SQL;
 			wp_send_json_success( array(
 				'synced' => $synced,
 			) );
-		} catch ( \Exception $e ) {
+		} catch ( Exception $e ) {
 			wp_send_json_error();
 		}
 	}
 
 	private function maybe_upload_remote_attachment( $attachment_args ) {
-		$attachment_url       = isset( $attachment_args['details']['url'] ) ? $attachment_args['details']['url'] : $attachment_args['attachment_url'];
-		$attachment_post_date = isset( $attachment_args['details']['post_date'] ) ? $attachment_args['details']['post_date'] : $attachment_args['post_date'];
-		$attachment_title     = isset( $attachment_args['post_title'] ) ? $attachment_args['post_title'] : '';
-		$attachment_name      = isset( $attachment_args['post_name'] ) ? $attachment_args['post_name'] : '';
+		$attachment_url       = $attachment_args['details']['url'] ?? $attachment_args['attachment_url'];
+		$attachment_post_date = $attachment_args['details']['post_date'] ?? $attachment_args['post_date'];
+		$attachment_title     = $attachment_args['post_title'] ?? '';
+		$attachment_name      = $attachment_args['post_name'] ?? '';
 
 		// Check to see if the file already exists.
 		if ( $attachment_id = $this->plugin->file_exists( $attachment_url, $attachment_post_date ) ) {
@@ -1003,7 +1001,7 @@ SQL;
 		// Move the file to the proper uploads folder.
 		if ( is_wp_error( $temp_file ) ) {
 			// @TODO log it!
-			throw new \Exception(
+			throw new Exception(
 				'Something went wrong when downloading the attachment temp file: ' . $temp_file->get_error_message()
 			);
 		}
@@ -1044,7 +1042,7 @@ SQL;
 			'filename'       => $filename,
 		);
 
-		if ( strlen( $attachment_name ) ) {
+		if ( $attachment_name != '' ) {
 			$attachment['post_name'] = $attachment_name;
 		}
 
@@ -1063,18 +1061,6 @@ SQL;
 		foreach ( $meta_data as $field => $values ) {
 			if ( is_array( $values ) ) {
 				update_post_meta( $post_id, $field, current( $values ) );
-				continue;
-
-				// Handle $values as an array.
-				if ( 1 === count( $values ) ) {
-					update_post_meta( $post_id, $field, maybe_unserialize( current( $values ) ) );
-				} else {
-					// Also handle multiple keys by removing and re-adding.
-					delete_post_meta( $post_id, $field );
-					foreach ( $values as $value ) {
-						add_post_meta( $post_id, $field, maybe_unserialize( $value ) );
-					}
-				}
 			} else {
 				update_post_meta( $post_id, $field, maybe_unserialize( $values ) );
 			}
@@ -1092,7 +1078,7 @@ SQL;
 	public function sync_taxonomy_term( $object_args ) {
 		try {
 			if ( ! taxonomy_exists( $object_args['taxonomy'] ) ) {
-				throw new \Exception(
+				throw new Exception(
 					sprintf( 'The taxonomy %s does not exist, cannot insert terms.', $object_args['taxonomy'] )
 				);
 			}
@@ -1106,7 +1092,7 @@ SQL;
 				) );
 
 				if ( is_wp_error( $term_ids ) ) {
-					throw new \Exception(
+					throw new Exception(
 						sprintf(
 							'There was an issue inserting term "%s" into taxonomy "%s": %s',
 							$object_args['name'],
@@ -1120,7 +1106,7 @@ SQL;
 			if ( ! empty( $object_args['meta_input'] ) ) {
 				$this->maybe_update_term_meta( $term_ids['term_id'], $object_args['meta_input'] );
 			}
-		} catch ( \Exception $e ) {
+		} catch ( Exception $e ) {
 			trigger_error( $e->getMessage() );
 
 			return array(
@@ -1292,7 +1278,7 @@ SQL;
 	 * @since 0.9.0
 	 */
 	private function is_partial_term_sync( $terms ) {
-		return 2 == count( $terms );
+		return 2 === count( $terms );
 	}
 
 	/**

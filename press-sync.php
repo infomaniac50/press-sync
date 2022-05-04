@@ -15,6 +15,8 @@
  * Text Domain: press-sync
  */
 
+const PRESS_SYNC_PLUGIN_FILE = __FILE__;
+
 require_once plugin_dir_path( __FILE__ ) . 'vendor/autoload.php';
 
-add_action( 'plugins_loaded', array( \Press_Sync\Press_Sync::init( __FILE__ ), 'hooks' ), 10, 1 );
+add_action( 'plugins_loaded', array( \Press_Sync\Press_Sync::init(), 'hooks' ), 10, 1 );

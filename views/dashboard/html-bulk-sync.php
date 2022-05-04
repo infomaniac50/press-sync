@@ -13,13 +13,13 @@
 				Loading...
 			</div>
 			<div class="progress-bar-wrapper" style="height: 24px; display: none; width: 100%; background-color: #DDD; border-radius: 6px; overflow: hidden; box-sizing: border-box;">
-				<div class="progress-bar" style="height:24px; width: 0px; background-color: #666; color: #fff; line-height: 24px; padding: 0 10px;"></div>
+				<div class="progress-bar" style="height:24px; width: 0; background-color: #666; color: #fff; line-height: 24px; padding: 0 10px;"></div>
 			</div>
 		</div>
 	</div>
 	<hr />
 	<h3>Bulk Sync Settings</h3>
-	<form class="form" method="post" action="options.php">
+	<form class="form" method="post" action="<?= admin_url('options.php') ?>">
 		<?php settings_fields( 'press-sync-bulk-sync' ); ?>
 		<?php do_settings_sections( 'press-sync-bulk-sync' ); ?>
 		<table class="form-table">
