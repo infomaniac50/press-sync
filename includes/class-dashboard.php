@@ -145,12 +145,17 @@ class Dashboard {
 	 * @since 0.1.0
 	 */
 	public function load_scripts() {
-		$this->enqueue->enqueue( 'press-sync', 'main', [
+		$assets = $this->enqueue->enqueue( 'press-sync', 'main', [
 			'css' => false,
 			'media' => 'all',
 		] );
 
-		wp_localize_script( 'press-sync', 'press_sync', array( 'ajax_url' => admin_url( 'admin-ajax.php' ) ) );
+		$handle = $this->enqueue->getPrimaryJsHandle( $assets );
+		wp_localize_script(
+			$handle,
+			'press_sync',
+			array( 'ajax_url' => admin_url( 'admin-ajax.php' ) )
+		);
 	}
 
 	/**
